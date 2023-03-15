@@ -1,0 +1,85 @@
+OLD INTAKE MECHANISM
+
+theta_i=(-IVO:dtheta:pi+IVC);
+N_i = length(theta_i);
+P_i=zeros(1,N_i);
+dP_i=zeros(1,N_i);
+T_i=zeros(1,N_i);
+V_i=Vd*((r/(r-1)) - ((1-cos(theta_i - pi))/2) + (L/S) - 0.5*sqrt((2*L/S)^2 - (sin(theta_i - pi)).^2));
+dV_i=gradient(V_i,dtheta);
+m=zeros(1,N_i);
+dm=zeros(1,N_i);
+
+U_Sound=sqrt(gamma*(R/MWair)*T_m);
+U_m=((pi/4)*Bore^2*CM)/(A2); 
+U_v=((pi/4)*Bore^2*CM)/(A1);
+Mat=U_v/U_Sound;
+Mam=U_m/U_Sound;
+rho_m=rho_atm/((1+((gamma-1)*0.5*Mam^2))^(1/(gamma-1)));
+rhot=rho_atm/((1+((gamma-1)*0.5*Mat^2))^(1/(gamma-1)));
+SP_m=P_m+(0.5*rho_m*U_m^2); % Stagnation pressure
+ST_m=T_m+((0.5*U_m^2)/(cp/MWair)); % Stagnation Temperature
+
+P_i(1)=101325;
+T_i(1)=T_m;
+m(1)=(P_i(1)*V_i(1))/(Ru*T_i(1)/MWair);
+for i=1:N_i-1
+    si=(pi*(IVO-IVC+(3*pi)+(2*theta_i(i))))/(IVO+IVC+pi);
+    LIFT=LIFT_MAX*(1+cos(si))/2;
+    CD=(107.78*((LIFT/D)^4))-(77.204*((LIFT/D)^3))+(14.1*((LIFT/D)^2))-(1.01*(LIFT/D))+0.6687;
+    CURTAREA=pi*D*LIFT;
+    if LIFT>=D/4
+        CURTAREA=(pi/4)*D^2;
+    end
+    if (P_i(i)<=SP_m)
+        if (P_i(i)/SP_m)>=(2/(gamma+1))^(gamma/(gamma-1))
+            dm(i)=((((CD*CURTAREA*SP_m)/(sqrt(R*ST_m)))*((P_i(i)/SP_m)^(1/gamma))*(((2*gamma)/(gamma-1))*(1-((P_i(i)/SP_m)^((gamma-1)/gamma))))^0.5))/W;
+            m(i+1)=(dtheta*dm(i))+m(i);
+            U_v=(dm(i)*W)/(rhot*A1);
+            U_m=(dm(i)*W)/(rho_m*A2);
+            Mat=U_v/U_Sound;
+            Mam=U_m/U_Sound;
+            rhot=rho_atm/((1+((gamma-1)*0.5*Mat^2))^(1/(gamma-1)));
+            rho_m=rho_atm/((1+((gamma-1)*0.5*Mam^2))^(1/(gamma-1))); 
+            SP_m=P_m+(0.5*rho_m*U_m^2);
+        else
+            dm(i)=(((CD*CURTAREA*SP_m)/(sqrt(R*ST_m)))*((gamma)^0.5)*(2/(gamma+1))^((gamma+1)/(2*(gamma-1))))/W;
+            m(i+1)=(dtheta*dm(i))+m(i);
+            U_v=(dm(i)*W)/(rhot*A1);
+            U_m=(dm(i)*W)/(rho_m*A2);
+            Mat=U_v/U_Sound;
+            Mam=U_m/U_Sound;
+            rhot=rho_atm/((1+((gamma-1)*0.5*Mat^2))^(1/(gamma-1)));
+            rho_m=rho_atm/((1+((gamma-1)*0.5*Mam^2))^(1/(gamma-1)));
+            SP_m=P_m+(0.5*rho_m*U_m^2);
+        end
+        dP_i(i)=((gamma-1)*(dm(i)*cp*T_i(i)))-(gamma*P_i(i)*dV_i(i))/V_i(i);
+        P_i(i+1)=(dtheta*dP_i(i))+P_i(i);
+        T_i(i+1)=(P_i(i+1)*V_i(i+1))/(m(i+1)*(Ru/MWair));
+    else
+        if (SP_m/P_i(i))>=(2/(gamma+1))^(gamma/(gamma-1))
+            dm(i)=((((CD*CURTAREA*P_i(i))/(sqrt(R*T_i(i))))*((SP_m/P_i(i))^(1/gamma))*(((2*gamma)/(gamma-1))*(1-((SP_m/P_i(i))^((gamma-1)/gamma))))^0.5))/W;
+            m(i+1)=(dtheta*dm(i))+m(i);
+            U_v=(dm(i)*W)/(rhot*A1);
+            U_m=(dm(i)*W)/(rho_m*A2);
+            Mat=U_v/U_Sound;
+            Mam=U_m/U_Sound;
+            rhot=rho_atm/((1+((gamma-1)*0.5*Mat^2))^(1/(gamma-1)));
+            rho_m=rho_atm/((1+((gamma-1)*0.5*Mam^2))^(1/(gamma-1)));
+            SP_m=P_m+(0.5*rho_m*U_m^2);
+        else
+            dm(i)=(((CD*CURTAREA*P_i(i))/(sqrt(R*T_i(i))))*((gamma)^0.5)*(2/(gamma+1))^((gamma+1)/(2*(gamma-1))))/W;
+            m(i+1)=(dtheta*dm(i))+m(i);
+            U_v=(dm(i)*W)/(rhot*A1);
+            U_m=(dm(i)*W)/(rho_m*A2);
+            Mat=U_v/U_Sound;
+            Mam=U_m/U_Sound;
+            rhot=rho_atm/((1+((gamma-1)*0.5*Mat^2))^(1/(gamma-1)));
+            rho_m=rho_atm/((1+((gamma-1)*0.5*Mam^2))^(1/(gamma-1)));
+            SP_m=P_m+(0.5*rho_m*U_m^2);
+        end
+        dP_i(i)=(((gamma-1)*(dm(i)*cp*T_i(i)))-(gamma*P_i(i)*dV_i(i))/V_i(i))/W;
+        P_i(i+1)=(dtheta*dP_i(i))+P_i(i);
+        T_i(i+1)=(P_i(i+1)*V_i(i+1))/(m(i+1)*(Ru/MWair));
+    end
+end

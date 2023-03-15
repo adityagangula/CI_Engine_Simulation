@@ -1,0 +1,52 @@
+theta_i=(-IVO:dtheta:pi+IVC);
+N_i = length(theta_i);
+P_i=zeros(1,N_i);
+dP_i=zeros(1,N_i);
+T_i=zeros(1,N_i);
+V_i=Vd*((r/(r-1)) - ((1-cos(theta_i - pi))/2) + (L/S) - 0.5*sqrt((2*L/S)^2 - (sin(theta_i - pi)).^2));
+dV_i=gradient(V_i,dtheta);
+m_i=zeros(1,N_i);
+avg_cyl_gas_velocity=2.28*CM;
+dm_i=zeros(1,N_i);
+Twall=420;
+T_im=300;
+P_im=101325;
+A_i= (pi*Bore^2)/2 + (pi*Bore*S/2)*(1 - cos(theta_i) + (L/Rad) - sqrt((L/Rad)^2 - (sin(theta_i)).^2));
+P_i(1)=P_im;
+T_i(1)=T_im;
+m_i(1)=(P_i(1)*V_i(1))/(T_i(1)*(Ru/MWair));
+
+for i=1:N_i-1
+    cv = 0.2*T_i(i) + 700;
+    cp = R+cv;
+    gamma=cp/cv;
+    CD=(107.78*((LIFT_MAX/D)^4))-(77.204*((LIFT_MAX/D)^3))+(14.1*((LIFT_MAX/D)^2))-(1.01*(LIFT_MAX/D))+0.6687;
+    CURTAREA=(pi/4)*D^2;
+    Cht=3.26*(10^-3)*(P_i(i)^(0.8))*(T_i(i)^(-0.55))*(Bore^(-0.2))*(avg_cyl_gas_velocity^(0.8));
+    if P_i(i)<=P_im
+        if (P_i(i)/P_im)<=(2/(gamma+1))^(gamma/(gamma-1))
+            dm_i(i)=(P_im/(sqrt(R*T_im)))*((sqrt(gamma))*((2*gamma/(gamma+1))^((gamma+1)/2*(gamma-1))))*CD*CURTAREA/W;
+            m_i(i+1)=(dtheta*dm_i(i))+m_i(i);
+        else
+            dm_i(i)=(P_im/(sqrt(R*T_im)))*(((P_i(i)/P_im)^(1/gamma))*sqrt((2*gamma/(gamma-1))*(1 - (P_i(i)/P_im)^((gamma-1)/gamma))))*CD*CURTAREA/W;
+            m_i(i+1)=(dtheta*dm_i(i))+m_i(i);
+        end
+        n=m_i(i)/MWair;
+        dP_i(i) = ((W*dm_i(i)*cp*T_i(i))-A_i(i)*Cht*(T_i(i)-Twall)-W*dV_i(i)*(P_i(i)*(1 + cv/(R)) + 2*a*b*n*n*n*cv/(R*((V_i(i))^3)) - a*n*n*cv/(R*((V_i(i))^2))))/(W*(V_i(i)*cv/(R) - cv*b*n/R));
+        P_i(i+1)=(dtheta*dP_i(i))+P_i(i);
+        T_i(i+1)=(P_i(i+1)*V_i(i+1))/(m_i(i+1)*(Ru/MWair));
+    else
+        if (P_im/P_i(i))<=(2/(gamma+1))^(gamma/(gamma-1))
+            dm_i(i)=-(P_i(i)/sqrt(R*T_i(i)))*((sqrt(gamma))*((2*gamma/(gamma+1))^((gamma+1)/2*(gamma-1))))*CD*CURTAREA/W;
+            m_i(i+1)=(dtheta*dm_i(i))+m_i(i);
+        else
+            dm_i(i)=(P_i(i)/sqrt(R*T_i(i)))*(((P_im/P_i(i))^(1/gamma))*sqrt((2*gamma/(gamma-1))*(1 - (P_im/P_i(i))^((gamma-1)/gamma))))*CD*CURTAREA/W;
+            m_i(i+1)=(dtheta*dm_i(i))+m_i(i);
+        end
+        n=m_i(i)/MWair;
+        dP_i(i) = (W*dm_i(i)*cp*T_i(i)-W*dV_i(i)*(P_i(i)*(1 + cv/(R)) + 2*a*b*n*n*n*cv/(R*((V_i(i))^3)) - a*n*n*cv/(R*((V_i(i))^2))))/(W*(V_i(i)*cv/(R) - cv*b*n/R));
+        P_i(i+1)=(dtheta*dP_i(i))+P_i(i);
+        T_i(i+1)=(P_i(i+1)*V_i(i+1))/(m_i(i+1)*(Ru/MWair));
+    end
+end
+mass_of_air_inducted = m_i(N_i)
